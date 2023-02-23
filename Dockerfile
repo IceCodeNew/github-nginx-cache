@@ -1,6 +1,20 @@
-FROM mcr.microsoft.com/mirror/docker/library/nginx:1.20
+FROM nginx:stable
 
-RUN apt-get update; apt-get install -y curl
+# http://bugs.python.org/issue19846
+# > At the moment, setting "LANG=C" on a Linux system *fundamentally breaks Python 3*, and that's not OK.
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN mkdir -p '/etc/dpkg/dpkg.cfg.d' '/etc/apt/apt.conf.d' \
+    && echo 'force-unsafe-io' > '/etc/dpkg/dpkg.cfg.d/docker-apt-speedup' \
+    && echo 'Acquire::Languages "none";' > '/etc/apt/apt.conf.d/docker-no-languages' \
+    && echo -e 'Acquire::GzipIndexes "true";\nAcquire::CompressionTypes::Order:: "gz";' > '/etc/apt/apt.conf.d/docker-gzip-indexes' \
+    && apt-get update -qq && apt-get full-upgrade -y \
+    && apt-get -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false purge \
+    && apt-get clean \
+    && rm -rf /var/cache/apt/* \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY ./nginx-config/ /etc/nginx/
 COPY kubernetes/active-passive/check-readiness.sh /check-readiness.sh
