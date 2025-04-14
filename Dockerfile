@@ -13,6 +13,7 @@ RUN mkdir -p '/etc/dpkg/dpkg.cfg.d' '/etc/apt/apt.conf.d' \
     && echo -e 'Acquire::GzipIndexes "true";\nAcquire::CompressionTypes::Order:: "gz";' > '/etc/apt/apt.conf.d/docker-gzip-indexes' \
     && apt-get update -qq && apt-get full-upgrade -y \
     && apt-get -y --no-install-recommends install \
+        catatonit \
         tzdata \
     && apt-get -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false purge \
     && apt-get clean \
@@ -24,3 +25,6 @@ COPY --link kubernetes/active-passive/check-readiness.sh /check-readiness.sh
 
 # test nginx config
 RUN nginx -c /etc/nginx/nginx.conf -t
+
+ENTRYPOINT [ "catatonit", "--", "/docker-entrypoint.sh" ]
+CMD [ "nginx", "-g", "daemon off;" ]
